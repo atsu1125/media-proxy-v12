@@ -88,16 +88,19 @@ async function proxyHandler(request, reply) {
     try {
         const isConvertibleImage = isMimeImage(file.mime, 'sharp-convertible-image');
         const isAnimationConvertibleImage = isMimeImage(file.mime, 'sharp-animation-convertible-image');
-        if ('emoji' in request.query ||
-            'avatar' in request.query ||
-            'static' in request.query ||
-            'preview' in request.query ||
-            'badge' in request.query) {
-            if (!isConvertibleImage) {
-                // 画像でないなら404でお茶を濁す
-                throw new StatusError('Unexpected mime', 404);
-            }
-        }
+        // お茶を濁さない！
+        //        if (
+        //            'emoji' in request.query ||
+        //            'avatar' in request.query ||
+        //            'static' in request.query ||
+        //            'preview' in request.query ||
+        //            'badge' in request.query
+        //        ) {
+        //            if (!isConvertibleImage) {
+        //                // 画像でないなら404でお茶を濁す
+        //                throw new StatusError('Unexpected mime', 404);
+        //            }
+        //        }
         let image = null;
         if ('emoji' in request.query || 'avatar' in request.query) {
             if (!isAnimationConvertibleImage && !('static' in request.query)) {
@@ -158,7 +161,7 @@ async function proxyHandler(request, reply) {
         else if (file.mime === 'image/svg+xml') {
             image = convertToWebpStream(file.path, 2048, 2048);
         }
-        else if (!file.mime.startsWith('image/') || !FILE_TYPE_BROWSERSAFE.includes(file.mime)) {
+        else if (!FILE_TYPE_BROWSERSAFE.includes(file.mime)) {
             throw new StatusError('Rejected type', 403, 'Rejected type');
         }
         if (!image) {
@@ -167,6 +170,13 @@ async function proxyHandler(request, reply) {
                 ext: file.ext,
                 type: file.mime,
             };
+        }
+        if (!image) {
+            // 画像でない場合はそのままプロキシする
+            reply.header('Content-Type', file.mime);
+            reply.header('Cache-Control', 'max-age=31536000, immutable');
+            reply.header('Content-Disposition', contentDisposition('inline', file.filename));
+            return reply.sendFile(file.path);
         }
         if ('cleanup' in file) {
             if ('pipe' in image.data && typeof image.data.pipe === 'function') {

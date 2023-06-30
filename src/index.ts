@@ -131,18 +131,19 @@ async function proxyHandler(request: FastifyRequest<{ Params: { url: string; }; 
         const isConvertibleImage = isMimeImage(file.mime, 'sharp-convertible-image');
         const isAnimationConvertibleImage = isMimeImage(file.mime, 'sharp-animation-convertible-image');
 
-        if (
-            'emoji' in request.query ||
-            'avatar' in request.query ||
-            'static' in request.query ||
-            'preview' in request.query ||
-            'badge' in request.query
-        ) {
-            if (!isConvertibleImage) {
-                // 画像でないなら404でお茶を濁す
-                throw new StatusError('Unexpected mime', 404);
-            }
-        }
+// お茶を濁さない！
+//        if (
+//            'emoji' in request.query ||
+//            'avatar' in request.query ||
+//            'static' in request.query ||
+//            'preview' in request.query ||
+//            'badge' in request.query
+//        ) {
+//            if (!isConvertibleImage) {
+//                // 画像でないなら404でお茶を濁す
+//                throw new StatusError('Unexpected mime', 404);
+//            }
+//        }
 
         let image: IImageStreamable | null = null;
 
@@ -204,7 +205,7 @@ async function proxyHandler(request: FastifyRequest<{ Params: { url: string; }; 
             };
         } else if (file.mime === 'image/svg+xml') {
             image = convertToWebpStream(file.path, 2048, 2048);
-        } else if (!file.mime.startsWith('image/') || !FILE_TYPE_BROWSERSAFE.includes(file.mime)) {
+        } else if (!FILE_TYPE_BROWSERSAFE.includes(file.mime)) {
             throw new StatusError('Rejected type', 403, 'Rejected type');
         }
 
@@ -214,6 +215,14 @@ async function proxyHandler(request: FastifyRequest<{ Params: { url: string; }; 
                 ext: file.ext,
                 type: file.mime,
             };
+        }
+
+        if (!image) {
+            // 画像でない場合はそのままプロキシする
+            reply.header('Content-Type', file.mime);
+            reply.header('Cache-Control', 'max-age=31536000, immutable');
+            reply.header('Content-Disposition', contentDisposition('inline', file.filename));
+            return reply.sendFile(file.path);
         }
 
         if ('cleanup' in file) {
