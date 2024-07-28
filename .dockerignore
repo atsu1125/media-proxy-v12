@@ -1,0 +1,20 @@
+.autogen
+.github
+.travis
+.vscode
+.config
+Dockerfile
+node_modules/
+.pnp.*
+
+# .yarn関連
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+.pnpm-store
+
+.idea/

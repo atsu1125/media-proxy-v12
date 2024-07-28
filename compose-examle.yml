@@ -1,0 +1,15 @@
+services:
+  web:
+    restart: always
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - PORT=3000
+    networks:
+      - external_network
+    volumes:
+      - ./config.js:/misskey-media-proxy/config.js
+
+networks:
+  external_network:
