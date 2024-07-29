@@ -1,4 +1,4 @@
-FROM node:18.20.4-bookworm
+FROM node:18.20.4-bookworm-slim
 
 ENV NODE_ENV=production
 
