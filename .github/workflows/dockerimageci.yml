@@ -1,0 +1,34 @@
+name: Docker Image CI
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name
+    - run: docker image ls my-image-name
+    - run: docker history my-image-name
+    - name: Copy Configure
+      run: cp config-example.js config.js
+    - name: Start Docker container
+      run: |
+        docker run -d --net=host -v ./config.js:/misskey-media-proxy/config.js:ro --env PORT=61812 --name my-container my-image-name
+        sleep 5
+    - name: Check Docker container logs
+      run: docker logs my-container
+    - name: Test HTTP request to container
+      run: |
+        response=$(curl --retry 10 -X GET -s -o /dev/null -w "%{http_code}" "http://localhost:61812/?url=https://raw.githubusercontent.com/atsu1125/media-proxy/master/assets/dummy.png")
+        if [ $response -eq 200 ]; then
+          echo "HTTP request successful. Status code: $response"
+          docker logs my-container
+        else
+          echo "HTTP request failed with status code: $response"
+          docker logs my-container
+          exit 1
+        fi
+    - name: Stop Docker container
+      run: docker stop my-container
