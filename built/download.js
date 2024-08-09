@@ -10,6 +10,9 @@ import { parse } from 'content-disposition';
 import config from './config/index.js';
 const pipeline = util.promisify(stream.pipeline);
 export async function downloadUrl(url, path) {
+    if (!isValidUrl(url)) {
+        throw new StatusError('Invalid URL', 400);
+    }
     if (process.env.NODE_ENV !== 'production')
         console.log(`Downloading ${url} to ${path} ...`);
     const timeout = 30 * 1000;
@@ -97,4 +100,23 @@ function isPrivateIp(ip) {
         }
     }
     return PrivateIp(ip) ?? false;
+}
+function isValidUrl(url) {
+    if (process.env.NODE_ENV !== 'production')
+        return true;
+    try {
+        if (url == null)
+            return false;
+        const u = typeof url === 'string' ? new URL(url) : url;
+        if (!u.protocol.match(/^https?:$/) || u.hostname === 'unix') {
+            return false;
+        }
+        if (u.port !== '' && !['80', '443'].includes(u.port)) {
+            return false;
+        }
+        return true;
+    }
+    catch {
+        return false;
+    }
 }
