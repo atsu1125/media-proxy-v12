@@ -12,16 +12,16 @@ jobs:
     - run: docker image ls my-image-name
     - run: docker history my-image-name
     - name: Copy Configure
-      run: cp config-example.js config.js
+      run: cp .config/{example,default}.yml
     - name: Start Docker container
       run: |
-        docker run -d --net=host -v ./config.js:/misskey-media-proxy/config.js:ro --env PORT=61812 --name my-container my-image-name
+        docker run -d --net=host -v ./.config:/misskey-media-proxy/.config:ro --env PORT=61812 --name my-container my-image-name
         sleep 5
     - name: Check Docker container logs
       run: docker logs my-container
     - name: Test HTTP request to container
       run: |
-        response=$(curl --retry 10 -X GET -s -o /dev/null -w "%{http_code}" "http://localhost:61812/?url=https://raw.githubusercontent.com/atsu1125/media-proxy/master/assets/dummy.png")
+        response=$(curl --retry 10 -X GET -s -o /dev/null -w "%{http_code}" "http://localhost:61812/?url=https://raw.githubusercontent.com/atsu1125/media-proxy-v12/v12/assets/dummy.png")
         if [ $response -eq 200 ]; then
           echo "HTTP request successful. Status code: $response"
           docker logs my-container

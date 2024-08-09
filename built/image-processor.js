@@ -1,24 +1,22 @@
 import sharp from 'sharp';
-export const webpDefault = {
-    quality: 77,
-    alphaQuality: 95,
-    lossless: false,
-    nearLossless: false,
-    smartSubsample: true,
-    mixed: true,
-    effort: 2,
-};
-export function convertToWebpStream(path, width, height, options = webpDefault) {
-    return convertSharpToWebpStream(sharp(path), width, height, options);
+/**
+ * Convert to WebP
+ *   with resize, remove metadata, resolve orientation, stop animation
+ */
+export async function convertToWebp(path, width, height, quality = 85) {
+    return convertSharpToWebp(await sharp(path), width, height, quality);
 }
-export function convertSharpToWebpStream(sharp, width, height, options = webpDefault) {
-    const data = sharp
+export async function convertSharpToWebp(sharp, width, height, quality = 85) {
+    const data = await sharp
         .resize(width, height, {
         fit: 'inside',
         withoutEnlargement: true,
     })
         .rotate()
-        .webp(options);
+        .webp({
+        quality,
+    })
+        .toBuffer();
     return {
         data,
         ext: 'webp',

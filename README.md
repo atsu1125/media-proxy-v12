@@ -2,82 +2,40 @@
 
 [→ メディアプロキシの仕様](./SPECIFICATION.md)
 
-Misskeyの/proxyが単体で動作します（Misskeyのコードがほぼそのまま移植されています）。
+Misskey v12の/proxyが単体で動作します（Misskey v12 Latestのコードがほぼそのまま移植されています）。
+Misskey v13のFastifyベースのメディアプロキシコードをv12のKoaベースのコードで書き直してます。
 
-**Fastifyプラグインとして動作する気がします。**  
-`pnpm start`は[fastify-cli](https://github.com/fastify/fastify-cli)が動作します。
-
-一応AWS Lambdaで動かす実装を用意しましたが、全くおすすめしません。
-https://github.com/tamaina/media-proxy-lambda
-
-## Fastifyプラグインとして動作させる
-### npm install
-
+## サーバーセットアップ（Dockerの場合）
 ```
-npm install git+https://github.com/misskey-dev/media-proxy.git
+git clone https://github.com/atsu1125/media-proxy-v12.git
+cd media-proxy-v12
+cp compose-example.yml compose.yml
+cp .config/{example,default}.yml
+docker compose up -d
 ```
 
-### Fastifyプラグインを書く
-```
-import MediaProxy from 'misskey-media-proxy';
-
-// ......
-
-fastify.register(MediaProxy);
-```
-
-オプションを指定できます。オプションの内容はindex.tsのMediaProxyOptionsに指定してあります。
-
-## サーバーのセットアップ方法
+## サーバーのセットアップ方法（Systemdの場合）
 まずはgit cloneしてcdしてください。
 
 ```
-git clone https://github.com/misskey-dev/media-proxy.git
-cd media-proxy
+git clone https://github.com/atsu1125/media-proxy-v12.git
+cd media-proxy-v12
 ```
 
-### pnpm install
+### yarn install
 ```
-NODE_ENV=production pnpm install
+NODE_ENV=production yarn install
 ```
 
-### config.jsを追加
-
-次のような内容で、設定ファイルconfig.jsをルートに作成してください。
-
-```js
-import { readFileSync } from 'node:fs';
-
-const repo = JSON.parse(readFileSync('./package.json', 'utf8'));
-
-export default {
-    // UA
-    userAgent: `MisskeyMediaProxy/${repo.version}`,
-
-    // プライベートネットワークでも許可するIP CIDR（default.ymlと同じ）
-    allowedPrivateNetworks: [],
-
-    // ダウンロードするファイルの最大サイズ (bytes)
-    maxSize: 262144000,
-
-    // CORS
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': '*',
-
-    // CSP
-    'Content-Security-Policy': `default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'`,
-
-    // フォワードプロキシ
-    // proxy: 'http://127.0.0.1:3128'
-}
+### configを編集
 ```
+cp .config/{example,default}.yml
+```
+で設定ファイルをコピーして`.config/default.yml`を編集してください
 
 ### サーバーを立てる
 適当にサーバーを公開してください。  
 （ここではmediaproxy.example.comで公開するものとします。）
-
-メモ書き程度にsystemdでの開始方法を残しますが、もしかしたらAWS Lambdaとかで動かしたほうが楽かもしれません。  
-（サーバーレスだとsharp.jsが動かない可能性が高いため、そこはなんとかしてください）
 
 systemdサービスのファイルを作成…
 
@@ -93,9 +51,8 @@ Description=Misskey Media Proxy
 Type=simple
 User=misskey
 ExecStart=/usr/bin/npm start
-WorkingDirectory=/home/misskey/media-proxy
+WorkingDirectory=/home/misskey/media-proxy-v12
 Environment="NODE_ENV=production"
-Environment="PORT=3000"
 TimeoutSec=60
 StandardOutput=journal
 StandardError=journal
@@ -116,9 +73,8 @@ sudo systemctl start misskey-proxy
 
 ### Misskeyのdefault.ymlに追記
 
-mediaProxyの指定をdefault.ymlに追記し、Misskeyを再起動してください。
+mediaProxyの指定をMisskeyのdefault.ymlに追記し、Misskeyを再起動してください。
 
 ```yml
 mediaProxy: https://mediaproxy.example.com
 ```
-

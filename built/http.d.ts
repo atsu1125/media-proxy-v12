@@ -2,7 +2,11 @@
 /// <reference types="node" />
 import * as http from 'node:http';
 import * as https from 'node:https';
-export declare function getAgents(proxy?: string): {
-    httpAgent: http.Agent;
-    httpsAgent: https.Agent;
-};
+/**
+ * Get http proxy or non-proxy agent
+ */
+export declare const httpAgent: http.Agent;
+/**
+ * Get https proxy or non-proxy agent
+ */
+export declare const httpsAgent: https.Agent;

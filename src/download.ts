@@ -7,43 +7,27 @@ import got, * as Got from 'got';
 import IPCIDR from 'ip-cidr';
 import PrivateIp from 'private-ip';
 import { StatusError } from './status-error.js';
-import { getAgents } from './http.js';
+import { httpAgent, httpsAgent } from './http.js';
 import { parse } from 'content-disposition';
+import config from './config/index.js';
 
 const pipeline = util.promisify(stream.pipeline);
 
-export type DownloadConfig = {
-    [x: string]: any;
-    userAgent: string;
-    allowedPrivateNetworks: string[];
-    maxSize: number;
-    httpAgent: http.Agent,
-    httpsAgent: https.Agent,
-    proxy?: boolean;
-}
-
-export const defaultDownloadConfig = {
-    userAgent: `MisskeyMediaProxy/0.0.0`,
-    allowedPrivateNetworks: [],
-    maxSize: 262144000,
-    proxy: false,
-    ...getAgents()
-}
-
-export async function downloadUrl(url: string, path: string, settings:DownloadConfig = defaultDownloadConfig): Promise<{
+export async function downloadUrl(url: string, path: string): Promise<{
     filename: string;
 }> {
     if (process.env.NODE_ENV !== 'production') console.log(`Downloading ${url} to ${path} ...`);
 
     const timeout = 30 * 1000;
     const operationTimeout = 60 * 1000;
+    const maxSize = config.maxFileSize || 262144000;
 
     const urlObj = new URL(url);
     let filename = urlObj.pathname.split('/').pop() ?? 'unknown';
 
     const req = got.stream(url, {
         headers: {
-            'User-Agent': settings.userAgent,
+            'User-Agent': config.userAgent,
         },
         timeout: {
             lookup: timeout,
@@ -55,8 +39,8 @@ export async function downloadUrl(url: string, path: string, settings:DownloadCo
             request: operationTimeout,	// whole operation timeout
         },
         agent: {
-            http: settings.httpAgent,
-            https: settings.httpsAgent,
+            http: httpAgent,
+            https: httpsAgent,
         },
         http2: false,
         retry: {
@@ -64,8 +48,8 @@ export async function downloadUrl(url: string, path: string, settings:DownloadCo
         },
         enableUnixSockets: false,
     }).on('response', (res: Got.Response) => {
-        if ((process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') && !settings.proxy && res.ip) {
-            if (isPrivateIp(res.ip, settings.allowedPrivateNetworks)) {
+        if ((process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') && !config.proxy && res.ip) {
+            if (isPrivateIp(res.ip)) {
                 console.log(`Blocked address: ${res.ip}`);
                 req.destroy();
             }
@@ -74,8 +58,8 @@ export async function downloadUrl(url: string, path: string, settings:DownloadCo
         const contentLength = res.headers['content-length'];
         if (contentLength != null) {
             const size = Number(contentLength);
-            if (size > settings.maxSize) {
-                console.log(`maxSize exceeded (${size} > ${settings.maxSize}) on response`);
+            if (size > maxSize) {
+                console.log(`maxSize exceeded (${size} > ${maxSize}) on response`);
                 req.destroy();
             }
         }
@@ -92,8 +76,8 @@ export async function downloadUrl(url: string, path: string, settings:DownloadCo
             }
         }
     }).on('downloadProgress', (progress: Got.Progress) => {
-        if (progress.transferred > settings.maxSize) {
-            console.log(`maxSize exceeded (${progress.transferred} > ${settings.maxSize}) on downloadProgress`);
+        if (progress.transferred > maxSize) {
+            console.log(`maxSize exceeded (${progress.transferred} > ${maxSize}) on downloadProgress`);
             req.destroy();
         }
     });
@@ -115,13 +99,13 @@ export async function downloadUrl(url: string, path: string, settings:DownloadCo
     }
 }
 
-function isPrivateIp(ip: string, allowedPrivateNetworks: string[]): boolean {
-    for (const net of allowedPrivateNetworks ?? []) {
-        const cidr = new IPCIDR(net);
-        if (cidr.contains(ip)) {
-            return false;
-        }
-    }
+function isPrivateIp(ip: string): boolean {
+	for (const net of config.allowedPrivateNetworks || []) {
+		const cidr = new IPCIDR(net);
+		if (cidr.contains(ip)) {
+			return false;
+		}
+	}
 
-    return PrivateIp(ip) ?? false;
+	return PrivateIp(ip) ?? false;
 }
