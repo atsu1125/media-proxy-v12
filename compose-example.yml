@@ -2,6 +2,7 @@ services:
   web:
     restart: always
     build: .
+    image: ghcr.io/atsu1125/media-proxy-v12:latest
     ports:
       - "127.0.0.1:3000:3000"
     networks:
