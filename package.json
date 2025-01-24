@@ -39,6 +39,7 @@
     "@koa/cors": "^3.1.0",
     "@koa/router": "^9.0.1",
     "@types/js-yaml": "^4.0.9",
+    "@types/portscanner": "^2.1.4",
     "cacheable-lookup": "^7.0.0",
     "content-disposition": "^0.5.4",
     "file-type": "^18.4.0",
@@ -48,6 +49,7 @@
     "is-svg": "^4.4.0",
     "js-yaml": "^4.1.0",
     "koa": "^2.13.4",
+    "portscanner": "^2.2.0",
     "private-ip": "^3.0.0",
     "sharp": "^0.31.3",
     "tmp": "^0.2.1"
