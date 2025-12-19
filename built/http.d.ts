@@ -1,6 +1,3 @@
-/// <reference types="node" />
-/// <reference types="node" />
-/// <reference types="node" />
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as net from 'node:net';

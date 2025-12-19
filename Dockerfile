@@ -1,4 +1,4 @@
-FROM node:18.20.4-bookworm-slim
+FROM node:20.19.6-bookworm-slim
 
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \

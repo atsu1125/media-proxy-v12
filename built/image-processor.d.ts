@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import sharp from 'sharp';
 export type IImage = {
     data: Buffer;

@@ -59,8 +59,8 @@ class HttpsRequestServiceAgent extends https.Agent {
     }
 }
 const cache = new CacheableLookup({
-    maxTtl: 3600,
-    errorTtl: 30,
+    maxTtl: 3600, // 1hours
+    errorTtl: 30, // 30secs
     lookup: false, // nativeのdns.lookupにfallbackしない
 });
 const agentOption = {
